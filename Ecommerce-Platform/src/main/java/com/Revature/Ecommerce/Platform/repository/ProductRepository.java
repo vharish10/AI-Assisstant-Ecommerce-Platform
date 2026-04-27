@@ -1,0 +1,35 @@
+package com.Revature.Ecommerce.Platform.repository;
+
+import com.Revature.Ecommerce.Platform.models.Products;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+public interface ProductRepository extends MongoRepository<Products, String> {
+
+    Page<Products> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+    Page<Products> findByCategory(String category, Pageable pageable);
+
+    Page<Products> findByBrand(String brand, Pageable pageable);
+
+    Page<Products> findByPriceBetween(Double minPrice, Double maxPrice, Pageable pageable);
+
+    Page<Products> findByCategoryAndBrandAndPriceBetween(
+            String category,
+            String brand,
+            Double minPrice,
+            Double maxPrice,
+            Pageable pageable
+    );
+
+    Page<Products> findByCategoryAndPriceBetween(String category, Double minPrice, Double maxPrice, Pageable pageable);
+
+    Page<Products> findByBrandAndPriceBetween(String brand, Double minPrice, Double maxPrice, Pageable pageable);
+
+    Page<Products> findByTagsContaining(String tag, Pageable pageable);
+
+    Page<Products> findByStockGreaterThan(int stock, Pageable pageable);
+
+    Page<Products> findBySellerId(String sellerId, Pageable pageable);
+}
