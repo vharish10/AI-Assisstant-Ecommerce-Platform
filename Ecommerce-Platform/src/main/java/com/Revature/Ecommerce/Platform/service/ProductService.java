@@ -68,7 +68,7 @@ public class ProductService {
         repository.deleteById(id);
         log.info("Product deleted successfully: {}", id);
     }
-
+    //multiple search conditions
     public Page<Products> searchProducts(
             String keyword,
             String category,

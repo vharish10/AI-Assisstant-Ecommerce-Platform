@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 public class EcommercePlatformApplication {
 
     @Autowired
-    private MongoTemplate mongoTemplate; // ✅ Injected by Spring
+    private MongoTemplate mongoTemplate;
 
     @PostConstruct
     public void testMongoConnection() {
