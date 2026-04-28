@@ -14,7 +14,7 @@ public class Cart {
 
     @Id
     private String id;
-    private String userId;
+    private Long userId;
     private List<CartItem> items=new ArrayList<>();
     private Double totalPrice=0.0;
 }

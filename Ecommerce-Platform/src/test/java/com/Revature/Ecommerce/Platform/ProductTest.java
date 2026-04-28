@@ -7,22 +7,23 @@ import com.Revature.Ecommerce.Platform.service.ProductService;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.Mock;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springframework.data.domain.*;
-
+import org.springframework.data.mongodb.core.MongoOperations;
 import java.util.*;
-
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-class ProductServiceTest {
+class ProductTest {
 
     @Mock
     private ProductRepository repository;
+
+    @Mock
+    private MongoOperations mongoTemplate;
 
     @InjectMocks
     private ProductService service;
@@ -38,97 +39,93 @@ class ProductServiceTest {
                 .brand("Apple")
                 .price(80000.0)
                 .stock(10)
-                .sellerId("seller123")   // ✅ added (required in service)
+                .sellerId(2)
                 .build();
     }
 
-    // 🟢 CREATE
-    @Test
+    @Test           //Checking if product can be created
     void testCreateProduct() {
         when(repository.save(product)).thenReturn(product);
-
-        Products saved = service.createProduct(product);
-
-        Assertions.assertNotNull(saved);
-        Assertions.assertEquals("iPhone 15", saved.getName());
+        Products saved=service.createProduct(product);
+        assertNotNull(saved);
+        assertEquals("iPhone 15", saved.getName());
         verify(repository, times(1)).save(product);
     }
 
-    // 🟢 GET BY ID SUCCESS
-    @Test
-    void testGetProductById_Success() {
+    @Test           //Testing the product search by Id
+    void testGetProductByIdSuccess() {
         when(repository.findById("1")).thenReturn(Optional.of(product));
-
         Products result = service.getProductById("1");
-
-        Assertions.assertEquals("iPhone 15", result.getName());
+        assertEquals("iPhone 15", result.getName());
     }
 
-    // 🔴 GET BY ID NOT FOUND
     @Test
-    void testGetProductById_NotFound() {
+    void testGetProductByIdNotFound(){
         when(repository.findById("1")).thenReturn(Optional.empty());
-
-        Assertions.assertThrows(ProductNotFoundException.class,
-                () -> service.getProductById("1"));
+        assertThrows(ProductNotFoundException.class,() -> service.getProductById("1"));
     }
 
-    // 🟢 DELETE SUCCESS
     @Test
-    void testDeleteProduct() {
+    void testDeleteProductSuccess() {
         when(repository.findById("1")).thenReturn(Optional.of(product));
-
-        service.deleteProduct("1", "seller123");
-
+        service.deleteProduct("1", 2);
         verify(repository, times(1)).deleteById("1");
     }
 
-    // 🔴 DELETE NOT AUTHORIZED
     @Test
-    void testDeleteProduct_Unauthorized() {
+    void testDeleteProductUnauthorized() {
         when(repository.findById("1")).thenReturn(Optional.of(product));
-
-        Assertions.assertThrows(UnauthorizedException.class,
-                () -> service.deleteProduct("1", "wrongSeller"));
+        assertThrows(UnauthorizedException.class,()->service.deleteProduct("1", 999));
     }
 
-    // 🟢 SEARCH BY CATEGORY
     @Test
-    void testSearchByCategory() {
+    void testSearchProducts() {
 
-        Page<Products> page = new PageImpl<>(List.of(product));
+        List<Products> productList = List.of(product);
 
-        when(repository.findByCategory(eq("Mobile"), any(Pageable.class)))
-                .thenReturn(page);
+        when(mongoTemplate.count(any(), eq(Products.class))).thenReturn(1L);
+        when(mongoTemplate.find(any(), eq(Products.class))).thenReturn(productList);
 
         Page<Products> result = service.searchProducts(
                 null, "Mobile", null,
                 null, null,
-                null, null, null,   // sellerId added
+                null,
                 0, 10,
                 "price", "asc"
         );
 
-        Assertions.assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getTotalElements());
+        assertEquals("iPhone 15", result.getContent().get(0).getName());
     }
 
-    // 🟢 SEARCH BY KEYWORD
     @Test
-    void testSearchByKeyword() {
+    void testSearchInvalidPriceRange() {
 
-        Page<Products> page = new PageImpl<>(List.of(product));
+        assertThrows(InvalidFilterException.class, () ->
+                service.searchProducts(
+                        null, null, null,
+                        5000.0, 1000.0,   // invalid
+                        null,
+                        0, 10,
+                        "price", "asc"
+                )
+        );
+    }
 
-        when(repository.findByNameContainingIgnoreCase(eq("iphone"), any(Pageable.class)))
-                .thenReturn(page);
+    @Test
+    void testSearchNoResults() {
+
+        when(mongoTemplate.count(any(), eq(Products.class))).thenReturn(0L);
+        when(mongoTemplate.find(any(), eq(Products.class))).thenReturn(Collections.emptyList());
 
         Page<Products> result = service.searchProducts(
-                "iphone", null, null,
+                null, null, null,
                 null, null,
-                null, null, null,   // sellerId added
+                null,
                 0, 10,
                 "price", "asc"
         );
 
-        Assertions.assertEquals(1, result.getContent().size());
+        assertEquals(0, result.getTotalElements());
     }
 }

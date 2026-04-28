@@ -31,5 +31,5 @@ public interface ProductRepository extends MongoRepository<Products, String> {
 
     Page<Products> findByStockGreaterThan(int stock, Pageable pageable);
 
-    Page<Products> findBySellerId(String sellerId, Pageable pageable);
+    Page<Products> findBySellerId(int sellerId, Pageable pageable);
 }

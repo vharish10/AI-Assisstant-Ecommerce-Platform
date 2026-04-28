@@ -13,14 +13,13 @@ import java.util.*;
 
 @Service
 public class CartService {
-
     @Autowired
     private CartRepository cartRepository;
 
     @Autowired
     private ProductRepository productRepository;
 
-    public Cart getOrCreateCart(String userId) {
+    public Cart getOrCreateCart(Long userId) {
         return cartRepository.findByUserId(userId).orElseGet(()->Cart.builder()
                         .userId(userId)
                         .items(new ArrayList<>())
@@ -28,7 +27,7 @@ public class CartService {
                         .build());
     }
 
-    public Cart addToCart(String userId, String productId, int quantity) {
+    public Cart addToCart(Long userId, String productId, int quantity) {
         Cart cart = getOrCreateCart(userId);
         Products product = productRepository.findById(productId).orElseThrow(() -> new RuntimeException("Product not found"));
 
@@ -56,7 +55,7 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
-    public Cart viewCart(String userId) {
+    public Cart viewCart(Long userId) {
         return cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Cart not found"));
     }
 
@@ -68,7 +67,7 @@ public class CartService {
         cart.setTotalPrice(total);
     }
 
-    public Cart updateQuantity(String userId, String productId, int quantity) {
+    public Cart updateQuantity(Long userId, String productId, int quantity) {
         Cart cart=cartRepository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException("Cart not found"));
         CartItem foundItem = null;
         for(CartItem item:cart.getItems()){
@@ -90,14 +89,14 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
-    public void clearCart(String userId){
+    public void clearCart(Long userId){
         Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException("Cart not found"));
         cart.getItems().clear();
         cart.setTotalPrice(0.0);
         cartRepository.save(cart);
     }
 
-    public Cart removeItem(String userId, String productId){
+    public Cart removeItem(Long userId, String productId){
         Cart cart=cartRepository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException("Cart not found"));
 
         boolean removed=false;

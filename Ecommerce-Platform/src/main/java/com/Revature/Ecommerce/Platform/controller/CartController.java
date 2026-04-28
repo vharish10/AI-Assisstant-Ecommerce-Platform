@@ -15,14 +15,14 @@ public class CartController {
     private CartService service;
 
     @PostMapping("/add")
-    public ResponseEntity<Cart> addToCart(@RequestParam String userId,
+    public ResponseEntity<Cart> addToCart(@RequestParam Long userId,
             @RequestParam String productId,
             @RequestParam int quantity) {
         return ResponseEntity.ok(service.addToCart(userId, productId, quantity));
     }
 
     @GetMapping
-    public ResponseEntity<Cart> viewCart(@RequestParam String userId) {
+    public ResponseEntity<Cart> viewCart(@RequestParam Long userId) {
         return ResponseEntity.ok(service.viewCart(userId));
     }
 }
