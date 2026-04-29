@@ -40,18 +40,18 @@ public class CartService {
         }
         Cart cart = getOrCreateCart(userId);
         Products product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException("Product not found"));
-
         if(quantity > product.getStock()){
             log.warn("Not enough stock for product {}", productId);
             throw new InvalidRequestException("Not enough stock");
         }
-
         Optional<CartItem> existingItem = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(productId))
                 .findFirst();
+
         if(existingItem.isPresent()){
             CartItem item = existingItem.get();
             int newQuantity = item.getQuantity() + quantity;
+
             if (newQuantity > product.getStock()) {
                 throw new InvalidRequestException("Exceeds available stock");
             }
@@ -66,6 +66,7 @@ public class CartService {
             cart.getItems().add(newItem);
         }
         recalculateTotal(cart);
+
         return cartRepository.save(cart);
     }
 
@@ -93,6 +94,10 @@ public class CartService {
                 foundItem=item;
                 break;
             }
+        }
+
+        if(foundItem==null){
+            throw new CartItemNotFoundException("Item not found in cart");
         }
 
         Products product = productRepository.findById(productId)

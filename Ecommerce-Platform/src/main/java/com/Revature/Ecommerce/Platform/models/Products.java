@@ -17,23 +17,17 @@ public class Products {
 
     @Id
     private String id;
-
     private String name;
     private String description;
-
     @Indexed
     private String category;
-
     @Indexed
     private String brand;
-
     @Indexed
     private Double price;
-
     private Integer stock;
-
-    private Integer sellerId;
-
+    private Long sellerId;
+    private String city;
     private List<String> images;
     private List<String> tags;
 

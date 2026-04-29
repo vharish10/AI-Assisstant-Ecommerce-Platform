@@ -4,7 +4,9 @@ import com.Revature.Ecommerce.Platform.models.Products;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface ProductRepository extends MongoRepository<Products, String> {
 
     Page<Products> findByNameContainingIgnoreCase(String name, Pageable pageable);

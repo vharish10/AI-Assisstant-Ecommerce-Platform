@@ -45,12 +45,11 @@ public class ProductController {
     public ResponseEntity<Products> updateProduct(
             @PathVariable String id,
             @RequestBody Products product,
-            @RequestParam Integer sellerId) {
+            @RequestParam Long sellerId) {
 
         log.info("API: Update Product {}", id);
 
-        return ResponseEntity.ok(
-                service.updateProduct(id, product, sellerId)
+        return ResponseEntity.ok(service.updateProduct(id, product, sellerId)
         );
     }
 
@@ -58,7 +57,7 @@ public class ProductController {
     @Operation(summary = "Delete Product")
     public ResponseEntity<String> deleteProduct(
             @PathVariable String id,
-            @RequestParam Integer sellerId) {
+            @RequestParam Long sellerId) {
 
         log.info("API: Delete Product {}", id);
 

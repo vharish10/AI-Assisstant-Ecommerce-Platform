@@ -39,7 +39,7 @@ public class ProductService {
         });
     }
 
-    public Products updateProduct(String id, Products updated, Integer sellerId) {
+    public Products updateProduct(String id, Products updated, Long sellerId) {
         log.info("Updating product ID: {} by seller: {}", id, sellerId);
         Products product=getProductById(id);
         if(!product.getSellerId().equals(sellerId)){
@@ -58,7 +58,7 @@ public class ProductService {
         return repository.save(product);
     }
 
-    public void deleteProduct(String id, Integer sellerId){
+    public void deleteProduct(String id, Long sellerId){
         log.info("Deleting product ID: {} by seller: {}", id, sellerId);
         Products product=getProductById(id);
         if(!product.getSellerId().equals(sellerId)){
@@ -82,6 +82,7 @@ public class ProductService {
             String sortDir) {
 
         log.info("Searching products with filters");
+
         Sort sort = Sort.by(
                 "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC,
                 sortBy != null ? sortBy : "price"
@@ -94,8 +95,8 @@ public class ProductService {
             throw new InvalidFilterException("Invalid price range");
         }
 
-        Query query=new Query();
-        List<Criteria> criteriaList=new ArrayList<>();
+        Query query = new Query();
+        List<Criteria> criteriaList = new ArrayList<>();
 
         if(keyword!=null && !keyword.isEmpty()){
             criteriaList.add(new Criteria().orOperator(
@@ -104,6 +105,7 @@ public class ProductService {
                     Criteria.where("brand").regex(keyword, "i")
             ));
         }
+
         if(category != null && !category.isEmpty()){
             criteriaList.add(Criteria.where("category").is(category));
         }
@@ -119,14 +121,16 @@ public class ProductService {
         if(tag != null && !tag.isEmpty()){
             criteriaList.add(Criteria.where("tags").in(tag));
         }
-
+        criteriaList.add(Criteria.where("stock").gt(0));
         if(!criteriaList.isEmpty()){
             query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
         }
-        long total=mongoTemplate.count(query, Products.class);
+
+        long total = mongoTemplate.count(query, Products.class);
         query.with(pageable);
 
-        List<Products> products=mongoTemplate.find(query, Products.class);
+        List<Products> products = mongoTemplate.find(query, Products.class);
+
         if(products.isEmpty()){
             log.warn("No products found for given filters");
         } else {

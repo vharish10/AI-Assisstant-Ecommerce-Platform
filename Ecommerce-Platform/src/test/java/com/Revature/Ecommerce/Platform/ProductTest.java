@@ -39,7 +39,7 @@ class ProductTest {
                 .brand("Apple")
                 .price(80000.0)
                 .stock(10)
-                .sellerId(2)
+                .sellerId(2L)
                 .build();
     }
 
@@ -68,14 +68,14 @@ class ProductTest {
     @Test
     void testDeleteProductSuccess() {
         when(repository.findById("1")).thenReturn(Optional.of(product));
-        service.deleteProduct("1", 2);
+        service.deleteProduct("1", 2L);
         verify(repository, times(1)).deleteById("1");
     }
 
     @Test
     void testDeleteProductUnauthorized() {
         when(repository.findById("1")).thenReturn(Optional.of(product));
-        assertThrows(UnauthorizedException.class,()->service.deleteProduct("1", 999));
+        assertThrows(UnauthorizedException.class,()->service.deleteProduct("1", 999L));
     }
 
     @Test
