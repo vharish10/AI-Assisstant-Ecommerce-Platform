@@ -1,6 +1,8 @@
 package com.Revature.Ecommerce.Platform.service;
 
 import com.Revature.Ecommerce.Platform.CustomExceptions.*;
+import com.Revature.Ecommerce.Platform.dto.ProductRequestDTO;
+import com.Revature.Ecommerce.Platform.dto.ProductResponseDTO;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.repository.ProductRepository;
 
@@ -26,6 +28,39 @@ public class ProductService {
     @Autowired
     private MongoOperations mongoTemplate;
 
+    public ProductResponseDTO mapToDTO(Products product) {
+        return ProductResponseDTO.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .category(product.getCategory())
+                .brand(product.getBrand())
+                .price(product.getPrice())
+                .stock(product.getStock())
+                .inStock(product.getStock() != null && product.getStock() > 0)
+                .city(product.getCity())
+                .images(product.getImages())
+                .tags(product.getTags())
+                .attributes(product.getAttributes())
+                .build();
+    }
+
+    public Products mapToEntity(ProductRequestDTO dto, Long sellerId) {
+        return Products.builder()
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .category(dto.getCategory())
+                .brand(dto.getBrand())
+                .price(dto.getPrice())
+                .stock(dto.getStock())
+                .city(dto.getCity())
+                .images(dto.getImages())
+                .tags(dto.getTags())
+                .attributes(dto.getAttributes())
+                .sellerId(sellerId)
+                .build();
+    }
+
     public Products createProduct(Products product) {
         log.info("Creating product: {}", product.getName());
         return repository.save(product);
@@ -39,21 +74,52 @@ public class ProductService {
         });
     }
 
-    public Products updateProduct(String id, Products updated, Long sellerId) {
+    public Products updateProduct(String id, ProductRequestDTO dto, Long sellerId) {
         log.info("Updating product ID: {} by seller: {}", id, sellerId);
         Products product=getProductById(id);
         if(!product.getSellerId().equals(sellerId)){
             log.warn("Unauthorized update attempt by seller: {}", sellerId);
             throw new UnauthorizedException("You cannot update this product");
         }
-        product.setName(updated.getName());
-        product.setPrice(updated.getPrice());
-        product.setCategory(updated.getCategory());
-        product.setBrand(updated.getBrand());
-        product.setStock(updated.getStock());
-        product.setAttributes(updated.getAttributes());
-        product.setImages(updated.getImages());
-        product.setTags(updated.getTags());
+        if (dto.getName() != null) {
+            product.setName(dto.getName());
+        }
+
+        if (dto.getDescription() != null) {
+            product.setDescription(dto.getDescription());
+        }
+
+        if (dto.getPrice() != null) {
+            product.setPrice(dto.getPrice());
+        }
+
+        if (dto.getCategory() != null) {
+            product.setCategory(dto.getCategory());
+        }
+
+        if (dto.getBrand() != null) {
+            product.setBrand(dto.getBrand());
+        }
+
+        if (dto.getStock() != null) {
+            product.setStock(dto.getStock());
+        }
+
+        if (dto.getAttributes() != null) {
+            product.setAttributes(dto.getAttributes());
+        }
+
+        if (dto.getImages() != null) {
+            product.setImages(dto.getImages());
+        }
+
+        if (dto.getTags() != null) {
+            product.setTags(dto.getTags());
+        }
+
+        if (dto.getCity() != null) {
+            product.setCity(dto.getCity());
+        }
         log.info("Product updated successfully: {}", id);
         return repository.save(product);
     }
@@ -100,7 +166,7 @@ public class ProductService {
 
         if(keyword!=null && !keyword.isEmpty()){
             criteriaList.add(new Criteria().orOperator(
-                    Criteria.where("name").regex(keyword, "i"),
+                    Criteria.where("name").regex("^" + keyword, "i"),
                     Criteria.where("description").regex(keyword, "i"),
                     Criteria.where("brand").regex(keyword, "i")
             ));
@@ -121,7 +187,6 @@ public class ProductService {
         if(tag != null && !tag.isEmpty()){
             criteriaList.add(Criteria.where("tags").in(tag));
         }
-        criteriaList.add(Criteria.where("stock").gt(0));
         if(!criteriaList.isEmpty()){
             query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
         }

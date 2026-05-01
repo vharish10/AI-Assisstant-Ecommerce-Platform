@@ -1,5 +1,6 @@
 package com.Revature.Ecommerce.Platform.controller;
 
+import com.Revature.Ecommerce.Platform.dto.*;
 import com.Revature.Ecommerce.Platform.models.Order;
 import com.Revature.Ecommerce.Platform.service.OrderService;
 
@@ -14,53 +15,67 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/orders")
-@Tag(name = "Order Controller")
+@Tag(name = "Order Controller", description = "APIs for order management")
 public class OrderController {
 
     @Autowired
     private OrderService service;
 
     @PostMapping("/checkout")
-    public ResponseEntity<Order> placeOrder(
-            @RequestParam Long userId,
-            @RequestParam Long addressId) {
+    @Operation(summary = "Place order from cart")
+    public ResponseEntity<OrderResponseDTO> placeOrder(
+            @RequestBody PlaceOrderRequestDTO dto) {
 
-        return ResponseEntity.ok(service.placeOrder(userId, addressId));
+        return ResponseEntity.ok(
+                service.placeOrder(dto.getUserId(), dto.getAddressId())
+        );
     }
 
     @PostMapping("/buy-now")
-    public ResponseEntity<Order> buyNow(
-            @RequestParam Long userId,
-            @RequestParam String productId,
-            @RequestParam int quantity,
-            @RequestParam Long addressId) {
+    @Operation(summary = "Buy product directly")
+    public ResponseEntity<OrderResponseDTO> buyNow(
+            @RequestBody BuyNowRequestDTO dto) {
 
-        return ResponseEntity.ok(service.buyNow(userId, productId, quantity, addressId));
+        return ResponseEntity.ok(
+                service.buyNow(
+                        dto.getUserId(),
+                        dto.getProductId(),
+                        dto.getQuantity(),
+                        dto.getAddressId()
+                )
+        );
     }
 
     @GetMapping("/user")
     @Operation(summary = "Get user order history")
-    public ResponseEntity<List<Order>> getOrders(@RequestParam Long userId) {
+    public ResponseEntity<List<OrderResponseDTO>> getOrders(
+            @RequestParam Long userId) {
+
         return ResponseEntity.ok(service.getOrdersByUser(userId));
     }
 
     @GetMapping("/{orderId}")
     @Operation(summary = "Get order details")
-    public ResponseEntity<Map<String, Object>> getOrderDetails(@PathVariable Long orderId) {
+    public ResponseEntity<OrderResponseDTO> getOrderDetails(
+            @PathVariable Long orderId) {
+
         return ResponseEntity.ok(service.getOrderDetails(orderId));
     }
 
     @PutMapping("/{orderId}/cancel")
     @Operation(summary = "Cancel order")
-    public ResponseEntity<Order> cancelOrder(@PathVariable Long orderId) {
+    public ResponseEntity<OrderResponseDTO> cancelOrder(
+            @PathVariable Long orderId) {
+
         return ResponseEntity.ok(service.cancelOrder(orderId));
     }
 
     @PutMapping("/{orderId}/cancel-item")
     @Operation(summary = "Cancel specific item in order")
-    public ResponseEntity<Order> cancelOrderItem(
+    public ResponseEntity<OrderResponseDTO> cancelOrderItem(
             @PathVariable Long orderId,
             @RequestParam String productId) {
+
         return ResponseEntity.ok(service.cancelOrderItem(orderId, productId));
     }
 }

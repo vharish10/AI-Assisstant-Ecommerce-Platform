@@ -1,10 +1,13 @@
 package com.Revature.Ecommerce.Platform.service;
 
+import com.Revature.Ecommerce.Platform.dto.OrderItemDTO;
+import com.Revature.Ecommerce.Platform.dto.OrderResponseDTO;
 import com.Revature.Ecommerce.Platform.models.*;
 import com.Revature.Ecommerce.Platform.models.*;
 import com.Revature.Ecommerce.Platform.repository.*;
 import com.Revature.Ecommerce.Platform.CustomExceptions.*;
 
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +34,37 @@ public class OrderService {
     @Autowired
     private ProductRepository productRepository;
 
+    public OrderResponseDTO mapToDTO(Order order) {
+
+        List<OrderItemDTO> itemDTOs = order.getItems().stream()
+                .map(item -> OrderItemDTO.builder()
+                        .productId(item.getProductId())
+                        .productName(item.getProductName())
+                        .quantity(item.getQuantity())
+                        .price(item.getPrice())
+                        .totalPrice(item.getPrice() * item.getQuantity())
+                        .cancelled(item.isCancelled())
+                        .build())
+                .toList();
+
+        return OrderResponseDTO.builder()
+                .orderId(order.getOrderId())
+                .userId(order.getUserId())
+                .subtotal(order.getSubtotal())
+                .discount(order.getDiscount())
+                .totalAmount(order.getTotalAmount())
+                .status(order.getStatus().name())
+                .orderDate(order.getOrderDate())
+                .addressId(order.getAddressId())
+                .items(itemDTOs)
+                .build();
+    }
+
     //ordering the complete product cart
-    public Order placeOrder(Long userId, Long addressId) {
-
+    @Transactional
+    public OrderResponseDTO placeOrder(Long userId, Long addressId) {
         log.info("Placing order for user {}", userId);
-
         Cart cart = cartService.getOrCreateCart(userId);
-
         if (cart.getItems().isEmpty()) {
             throw new EmptyCartException("Cart is empty");
         }
@@ -67,7 +94,6 @@ public class OrderService {
             productRepository.save(product);
 
             OrderItem orderItem = OrderItem.builder()
-                    .orderItemId(savedOrder.getOrderId())
                     .productId(product.getId())
                     .productName(product.getName())
                     .quantity(item.getQuantity())
@@ -84,16 +110,26 @@ public class OrderService {
 
         log.info("Order placed successfully: {}", savedOrder.getOrderId());
 
-        return savedOrder;
+        return mapToDTO(savedOrder);
     }
 
     //buuying the product directly without adding it to the cart
-    public Order buyNow(Long userId, String productId, int quantity, Long addressId){
+    @Transactional
+    public OrderResponseDTO buyNow(Long userId, String productId, int quantity, Long addressId){
+
         log.info("Buy Now triggered for user {} product {}", userId, productId);
-        if(quantity<=0){
+
+        if(quantity <= 0){
             throw new InvalidRequestException("Quantity must be greater than 0");
         }
-        Products product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException("Product not found"));
+
+        Products product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+
+        if(product.getStock() <= 0){
+            throw new InvalidRequestException("Product is out of stock");
+        }
+
         if(quantity > product.getStock()){
             throw new InvalidRequestException("Not enough stock");
         }
@@ -115,69 +151,93 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         OrderItem item = OrderItem.builder()
-                .orderItemId(savedOrder.getOrderId())
                 .productId(product.getId())
                 .productName(product.getName())
                 .quantity(quantity)
                 .price(product.getPrice())
                 .sellerId(product.getSellerId())
                 .city(product.getCity())
+                .order(savedOrder)   // ⚠️ IMPORTANT (you missed this earlier)
                 .build();
 
         orderItemRepository.save(item);
 
+        // attach item to order (important for DTO mapping)
+        savedOrder.setItems(List.of(item));
+
+        // reduce stock
         product.setStock(product.getStock() - quantity);
         productRepository.save(product);
 
         log.info("Buy Now order placed: {}", savedOrder.getOrderId());
 
-        return savedOrder;
+        return mapToDTO(savedOrder);
     }
 
     //viewing all the orders
-    public List<Order> getOrdersByUser(Long userId) {
-        log.info("Fetching orders for user {}", userId);
-        return orderRepository.findByUserId(userId);
+    public List<OrderResponseDTO> getOrdersByUser(Long userId) {
+        return orderRepository.findByUserId(userId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     //tracking the orders
-    public Map<String, Object> getOrderDetails(Long orderId) {
-        Order order=orderRepository.findById(orderId).orElseThrow(()->new OrderNotFoundException("Order not found"));
-        List<OrderItem> items = orderItemRepository.findByOrderOrderId(orderId);;
-        Map<String, Object> response = new HashMap<>();
-        response.put("order", order);
-        response.put("items", items);
-        return response;
+    public OrderResponseDTO getOrderDetails(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        return mapToDTO(order);
     }
 
     //cancelling the order
-    public Order cancelOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(()->new OrderNotFoundException("Order not found"));
-        if(order.getStatus()==OrderStatus.SHIPPED || order.getStatus()==OrderStatus.DELIVERED){
+    @Transactional
+    public OrderResponseDTO cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+        if (order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED) {
             throw new OrderCancelAfterShippingEXception("Cannot cancel after shipping");
         }
+        List<OrderItem> items = orderItemRepository.findByOrderOrderId(orderId);
+        for(OrderItem item : items){
+            if(!item.isCancelled()){
+                Products product = productRepository.findById(item.getProductId())
+                        .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+                product.setStock(product.getStock() + item.getQuantity());
+                productRepository.save(product);
+                item.setCancelled(true);
+                orderItemRepository.save(item);
+            }
+        }
         order.setStatus(OrderStatus.CANCELLED);
-        log.info("Order {} cancelled", orderId);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        return mapToDTO(savedOrder);
     }
 
     //cancelling specific item from the cart when entire cart is ordered
-    public Order cancelOrderItem(Long orderId, String productId) {
-        //extracting the cart of the user
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order not found"));
+    @Transactional
+    public OrderResponseDTO cancelOrderItem(Long orderId, String productId) {
 
-        if(order.getStatus()==OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED){
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        if (order.getStatus() == OrderStatus.SHIPPED ||
+                order.getStatus() == OrderStatus.DELIVERED) {
             throw new OrderCancelAfterShippingEXception("Cannot cancel after shipping");
         }
 
-        List<OrderItem> items = orderItemRepository.findByOrderOrderId(orderId);;
+        List<OrderItem> items = orderItemRepository.findByOrderOrderId(orderId);
 
         boolean found = false;
         double refundAmount = 0.0;
 
         for (OrderItem item : items) {
 
-            if (item.getProductId().equals(productId) && !item.isCancelled()) {
+            if (item.getProductId().equals(productId)) {
+
+                if (item.isCancelled()) {
+                    throw new InvalidRequestException("Item already cancelled");
+                }
 
                 item.setCancelled(true);
                 orderItemRepository.save(item);
@@ -200,11 +260,9 @@ public class OrderService {
             throw new CartItemNotFoundException("Item not found in order");
         }
 
-        // updating the total amount after deducting the cancelled product amoiunt
+        // Update total amount
         double newFinalAmount = order.getTotalAmount() - refundAmount;
-
-        order.setTotalAmount(newFinalAmount);
-        order.setTotalAmount(newFinalAmount);
+        order.setTotalAmount(newFinalAmount);   // ✅ fixed duplicate line
 
         // Check if all items cancelled
         boolean allCancelled = items.stream().allMatch(OrderItem::isCancelled);
@@ -213,8 +271,9 @@ public class OrderService {
             order.setStatus(OrderStatus.CANCELLED);
         }
 
-        return orderRepository.save(order);
-    }
+        Order savedOrder = orderRepository.save(order);
 
+        return mapToDTO(savedOrder);   // 🔥 only change needed for DTO
+    }
 
 }

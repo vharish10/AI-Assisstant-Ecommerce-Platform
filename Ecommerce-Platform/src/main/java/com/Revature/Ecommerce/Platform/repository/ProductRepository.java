@@ -9,6 +9,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductRepository extends MongoRepository<Products, String> {
 
+    int countBySellerId(Long sellerId);
+
+    int countBySellerIdAndStockLessThan(Long sellerId, int stock);
+
     Page<Products> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
     Page<Products> findByCategory(String category, Pageable pageable);

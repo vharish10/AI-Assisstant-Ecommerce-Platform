@@ -1,10 +1,12 @@
 package com.Revature.Ecommerce.Platform.service;
 
+import com.Revature.Ecommerce.Platform.CustomExceptions.ProductNotFoundException;
 import com.Revature.Ecommerce.Platform.CustomExceptions.WishListNotFound;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.models.Wishlist;
 import com.Revature.Ecommerce.Platform.repository.ProductRepository;
 import com.Revature.Ecommerce.Platform.repository.WishlistRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.*;
@@ -30,7 +32,9 @@ public class WishListService {
                         .build());
         //if the wishlist doesn't contain the product then add the product
         if(!wishlist.getProductIds().contains(productId)){
-            wishlist.getProductIds().add(productId);
+            if (!productRepository.existsById(productId)) {
+                throw new ProductNotFoundException("Product not found");
+            }
         }
         //save the product to wishlist
         return wishlistRepository.save(wishlist);
@@ -51,6 +55,7 @@ public class WishListService {
     }
 
     //if we want to move the product from wishlist to cart
+    @Transactional
     public void moveToCart(Long userId, String productId) {
 
         // Add to cart (default quantity = 1)
@@ -58,10 +63,12 @@ public class WishListService {
 
         // Remove from wishlist
         Wishlist wishlist = wishlistRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Wishlist not found"));
+                .orElseThrow(()->new WishListNotFound("Wishlist not found"));
 
+        if(!wishlist.getProductIds().contains(productId)){
+            throw new RuntimeException("Product not in wishlist");
+        }
         wishlist.getProductIds().remove(productId);
-
         wishlistRepository.save(wishlist);
     }
 }

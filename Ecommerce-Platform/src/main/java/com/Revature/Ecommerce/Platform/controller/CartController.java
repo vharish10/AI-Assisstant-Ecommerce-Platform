@@ -1,5 +1,8 @@
 package com.Revature.Ecommerce.Platform.controller;
 
+import com.Revature.Ecommerce.Platform.dto.AddToCartRequestDTO;
+import com.Revature.Ecommerce.Platform.dto.CartResponseDTO;
+import com.Revature.Ecommerce.Platform.dto.UpdateCartItemDTO;
 import com.Revature.Ecommerce.Platform.models.Cart;
 import com.Revature.Ecommerce.Platform.service.CartService;
 
@@ -26,48 +29,49 @@ public class CartController {
 
     @PostMapping("/add")
     @Operation(summary = "Add product to cart")
-    public ResponseEntity<Cart> addToCart(@Parameter(description = "User ID") @RequestParam Long userId,
-            @Parameter(description = "Product ID") @RequestParam String productId,
-            @Parameter(description = "Quantity") @RequestParam int quantity) {
+    public ResponseEntity<CartResponseDTO> addToCart(
+            @Parameter(description = "User ID") @RequestParam Long userId,
+            @RequestBody AddToCartRequestDTO dto) {
 
-        log.info("API: Add to cart | userId={} productId={} quantity={}", userId, productId, quantity);
-
-        return ResponseEntity.ok(service.addToCart(userId, productId, quantity));
+        log.info("API: Add to cart | userId={} productId={} quantity={}",
+                userId, dto.getProductId(), dto.getQuantity());
+        return ResponseEntity.ok(service.addToCart(userId, dto.getProductId(), dto.getQuantity())
+        );
     }
 
     @GetMapping
     @Operation(summary = "View user's cart")
-    public ResponseEntity<Cart> viewCart(@Parameter(description = "User ID") @RequestParam Long userId) {
-        log.info("API: View cart | userId={}", userId);
+    public ResponseEntity<CartResponseDTO> viewCart(
+            @Parameter(description = "User ID") @RequestParam Long userId) {
+
         return ResponseEntity.ok(service.viewCart(userId));
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update quantity of a cart item")
-    public ResponseEntity<Cart> updateQuantity(
+    public ResponseEntity<CartResponseDTO> updateQuantity(
             @Parameter(description = "User ID") @RequestParam Long userId,
-            @Parameter(description = "Product ID") @RequestParam String productId,
-            @Parameter(description = "New quantity") @RequestParam int quantity) {
+            @RequestBody UpdateCartItemDTO dto) {
 
-        log.info("API: Update cart item | userId={} productId={} quantity={}", userId, productId, quantity);
-
-        return ResponseEntity.ok(service.updateQuantity(userId, productId, quantity));
+        return ResponseEntity.ok(
+                service.updateQuantity(userId, dto.getProductId(), dto.getQuantity())
+        );
     }
 
     @DeleteMapping("/remove")
     @Operation(summary = "Remove item from cart")
-    public ResponseEntity<Cart> removeItem(@Parameter(description = "User ID") @RequestParam Long userId,
+    public ResponseEntity<CartResponseDTO> removeItem(
+            @Parameter(description = "User ID") @RequestParam Long userId,
             @Parameter(description = "Product ID") @RequestParam String productId) {
 
-        log.info("API: Remove item | userId={} productId={}", userId, productId);
         return ResponseEntity.ok(service.removeItem(userId, productId));
     }
 
     @DeleteMapping("/clear")
     @Operation(summary = "Clear entire cart")
-    public ResponseEntity<String> clearCart(@Parameter(description = "User ID") @RequestParam Long userId) {
+    public ResponseEntity<String> clearCart(
+            @Parameter(description = "User ID") @RequestParam Long userId) {
 
-        log.info("API: Clear cart | userId={}", userId);
         service.clearCart(userId);
         return ResponseEntity.ok("Cart cleared successfully");
     }
