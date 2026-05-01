@@ -78,32 +78,30 @@ class OrderServiceTest {
         verify(orderItemRepository, times(1)).save(any());
     }
 
-    @Test
+    @Test           //placing an order when cart is empty
     void testplaceOrderEmptyCart() {
+        //making the cart empty
         cart.setItems(new ArrayList<>());
         when(cartService.getOrCreateCart(1L)).thenReturn(cart);
         assertThrows(EmptyCartException.class,()->orderService.placeOrder(1L, 101L));
     }
 
-    @Test
+    @Test           //trying to place an order product is not found
     void testPlaceOrderProductNotFound() {
         when(cartService.getOrCreateCart(1L)).thenReturn(cart);
         when(productRepository.findById("p1")).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class,()->orderService.placeOrder(1L, 101L));
     }
 
-    @Test
+    @Test           //placing an order when available stock is less the product quantity selected
     void testPlaceOrderInsufficientStock() {
         product.setStock(1);
-
         when(cartService.getOrCreateCart(1L)).thenReturn(cart);
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
-
-        assertThrows(RuntimeException.class,
-                () -> orderService.placeOrder(1L, 101L));
+        assertThrows(RuntimeException.class, () -> orderService.placeOrder(1L, 101L));
     }
 
-    @Test
+    @Test           //buying only one product without adding it to the cart
     void testBuyNowSuccess() {
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
         when(orderRepository.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -115,25 +113,25 @@ class OrderServiceTest {
         verify(orderItemRepository).save(any());
     }
 
-    @Test
+    @Test           //Quantity validation
     void testBuyNowInvalidQuantity() {
-        assertThrows(InvalidRequestException.class, () -> orderService.buyNow(1L, "p1", 0, 101L));
+        assertThrows(InvalidRequestException.class,()->orderService.buyNow(1L, "p1", 0, 101L));
     }
 
-    @Test
+    @Test           //trying to buy the product that is unavailable
     void testBuyNowProductNotFound() {
         when(productRepository.findById("p1")).thenReturn(Optional.empty());
         assertThrows(ProductNotFoundException.class, () -> orderService.buyNow(1L, "p1", 1, 101L));
     }
 
-    @Test
+    @Test               //trying to buy one product when the product stock is unavailable orlimited
     void testBuyNowInsufficientStock() {
         product.setStock(1);
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
         assertThrows(InvalidRequestException.class,()->orderService.buyNow(1L, "p1", 5, 101L));
     }
 
-    @Test
+    @Test           //order detatils
     void testGetOrderDetailsSuccess() {
         Order order = Order.builder().orderId(1L).build();
 
