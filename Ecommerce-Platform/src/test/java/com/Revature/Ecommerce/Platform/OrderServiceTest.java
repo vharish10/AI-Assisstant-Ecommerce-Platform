@@ -1,5 +1,6 @@
 package com.Revature.Ecommerce.Platform;
 
+import com.Revature.Ecommerce.Platform.dto.OrderResponseDTO;
 import com.Revature.Ecommerce.Platform.models.*;
 import com.Revature.Ecommerce.Platform.repository.*;
 import com.Revature.Ecommerce.Platform.CustomExceptions.*;
@@ -69,9 +70,25 @@ class OrderServiceTest {
     void testplaceOrdersuccess() {
         when(cartService.getOrCreateCart(1L)).thenReturn(cart);
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
-        when(orderRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        Order result = orderService.placeOrder(1L, 101L);
+        when(orderRepository.save(any())).thenAnswer(invocation -> {
+            Order o = invocation.getArgument(0);
+            o.setOrderId(1L);
+            o.setItems(new ArrayList<>());   // ✅ prevent NPE
+            return o;
+        });
+
+        when(orderItemRepository.save(any())).thenAnswer(invocation -> {
+            OrderItem item = invocation.getArgument(0);
+            Order order = item.getOrder();
+            if (order.getItems() == null) {
+                order.setItems(new ArrayList<>());
+            }
+            order.getItems().add(item);   // ✅ attach items for DTO
+            return item;
+        });
+
+        OrderResponseDTO result = orderService.placeOrder(1L, 101L);
 
         assertNotNull(result);
         verify(orderRepository, times(1)).save(any());
@@ -90,7 +107,7 @@ class OrderServiceTest {
     void testPlaceOrderProductNotFound() {
         when(cartService.getOrCreateCart(1L)).thenReturn(cart);
         when(productRepository.findById("p1")).thenReturn(Optional.empty());
-        assertThrows(RuntimeException.class,()->orderService.placeOrder(1L, 101L));
+        assertThrows(ProductNotFoundException.class,()->orderService.placeOrder(1L, 101L));
     }
 
     @Test           //placing an order when available stock is less the product quantity selected
@@ -98,15 +115,16 @@ class OrderServiceTest {
         product.setStock(1);
         when(cartService.getOrCreateCart(1L)).thenReturn(cart);
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
-        assertThrows(RuntimeException.class, () -> orderService.placeOrder(1L, 101L));
+        assertThrows(QuantityExceedStockException.class, () -> orderService.placeOrder(1L, 101L));
     }
 
     @Test           //buying only one product without adding it to the cart
     void testBuyNowSuccess() {
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
         when(orderRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(orderItemRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        Order result = orderService.buyNow(1L, "p1", 2, 101L);
+        OrderResponseDTO result = orderService.buyNow(1L, "p1", 2, 101L);
 
         assertNotNull(result);
         verify(orderRepository).save(any());
@@ -133,16 +151,18 @@ class OrderServiceTest {
 
     @Test           //order detatils
     void testGetOrderDetailsSuccess() {
-        Order order = Order.builder().orderId(1L).build();
+        Order order = Order.builder()
+                .orderId(1L)
+                .status(OrderStatus.PLACED)   // ✅ required
+                .items(new ArrayList<>())     // ✅ required
+                .build();
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(orderItemRepository.findByOrderOrderId(1L)).thenReturn(List.of());
 
-        Map<String, Object> result = orderService.getOrderDetails(1L);
+        OrderResponseDTO result = orderService.getOrderDetails(1L);
 
         assertNotNull(result);
-        assertTrue(result.containsKey("order"));
-        assertTrue(result.containsKey("items"));
+        assertEquals(1L, result.getOrderId());
     }
 
     @Test
@@ -156,14 +176,16 @@ class OrderServiceTest {
         Order order = Order.builder()
                 .orderId(1L)
                 .status(OrderStatus.PLACED)
+                .items(new ArrayList<>())
                 .build();
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderItemRepository.findByOrderOrderId(1L)).thenReturn(new ArrayList<>());
         when(orderRepository.save(any())).thenReturn(order);
 
-        Order result = orderService.cancelOrder(1L);
+        OrderResponseDTO result = orderService.cancelOrder(1L);
 
-        assertEquals(OrderStatus.CANCELLED, result.getStatus());
+        assertEquals("CANCELLED", result.getStatus());
     }
 
     @Test
@@ -182,6 +204,7 @@ class OrderServiceTest {
                 .orderId(1L)
                 .status(OrderStatus.PLACED)
                 .totalAmount(200.0)
+                .items(new ArrayList<>())
                 .build();
 
         OrderItem item = OrderItem.builder()
@@ -196,7 +219,7 @@ class OrderServiceTest {
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
         when(orderRepository.save(any())).thenReturn(order);
 
-        Order result = orderService.cancelOrderItem(1L, "p1");
+        OrderResponseDTO result = orderService.cancelOrderItem(1L, "p1");
 
         assertNotNull(result);
         verify(orderItemRepository).save(any());
@@ -207,6 +230,7 @@ class OrderServiceTest {
         Order order = Order.builder()
                 .orderId(1L)
                 .status(OrderStatus.PLACED)
+                .items(new ArrayList<>())
                 .build();
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));

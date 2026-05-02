@@ -2,7 +2,7 @@ package com.Revature.Ecommerce.Platform.service;
 
 import com.Revature.Ecommerce.Platform.CustomExceptions.*;
 import com.Revature.Ecommerce.Platform.dto.ProductRequestDTO;
-import com.Revature.Ecommerce.Platform.dto.ProductResponseDTO;
+import com.Revature.Ecommerce.Platform.dto.*;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.repository.ProductRepository;
 
@@ -135,7 +135,7 @@ public class ProductService {
         log.info("Product deleted successfully: {}", id);
     }
     //multiple search conditions
-    public Page<Products> searchProducts(
+    public ProductSearchResponseDTO searchProducts(
             String keyword,
             String category,
             String brand,
@@ -156,15 +156,14 @@ public class ProductService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        if(minPrice!=null && maxPrice!=null && minPrice>maxPrice){
-            log.error("Invalid price range: {} - {}", minPrice, maxPrice);
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
             throw new InvalidFilterException("Invalid price range");
         }
 
         Query query = new Query();
         List<Criteria> criteriaList = new ArrayList<>();
 
-        if(keyword!=null && !keyword.isEmpty()){
+        if (keyword != null && !keyword.isEmpty()) {
             criteriaList.add(new Criteria().orOperator(
                     Criteria.where("name").regex("^" + keyword, "i"),
                     Criteria.where("description").regex(keyword, "i"),
@@ -172,35 +171,41 @@ public class ProductService {
             ));
         }
 
-        if(category != null && !category.isEmpty()){
+        if (category != null && !category.isEmpty()) {
             criteriaList.add(Criteria.where("category").is(category));
         }
 
-        if(brand != null && !brand.isEmpty()){
+        if (brand != null && !brand.isEmpty()) {
             criteriaList.add(Criteria.where("brand").is(brand));
         }
 
-        if(minPrice != null && maxPrice != null){
+        if (minPrice != null && maxPrice != null) {
             criteriaList.add(Criteria.where("price").gte(minPrice).lte(maxPrice));
         }
 
-        if(tag != null && !tag.isEmpty()){
+        if (tag != null && !tag.isEmpty()) {
             criteriaList.add(Criteria.where("tags").in(tag));
         }
-        if(!criteriaList.isEmpty()){
+
+        if (!criteriaList.isEmpty()) {
             query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
         }
 
         long total = mongoTemplate.count(query, Products.class);
+
         query.with(pageable);
 
         List<Products> products = mongoTemplate.find(query, Products.class);
 
-        if(products.isEmpty()){
-            log.warn("No products found for given filters");
-        } else {
-            log.info("Found {} products", total);
-        }
-        return new PageImpl<>(products, pageable, total);
+        List<ProductResponseDTO> productDTOs = products.stream()
+                .map(this::mapToDTO)
+                .toList();
+
+        return new ProductSearchResponseDTO(
+                productDTOs,
+                page,
+                size,
+                total
+        );
     }
 }

@@ -1,5 +1,7 @@
 package com.Revature.Ecommerce.Platform.controller;
 
+import com.Revature.Ecommerce.Platform.dto.WishlistRequestDTO;
+import com.Revature.Ecommerce.Platform.dto.WishlistResponseDTO;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.models.Wishlist;
 import com.Revature.Ecommerce.Platform.service.WishListService;
@@ -24,29 +26,34 @@ public class WishListController {
 
     @PostMapping("/add")
     @Operation(summary = "Add product to wishlist")
-    public ResponseEntity<Wishlist> add(@Parameter(description = "User ID") @RequestParam Long userId,
-            @Parameter(description = "Product ID") @RequestParam String productId) {
-        return ResponseEntity.ok(service.addToWishlist(userId, productId));
+    public ResponseEntity<WishlistResponseDTO> add(
+            @RequestBody WishlistRequestDTO dto) {
+
+        return ResponseEntity.ok(service.addToWishlist(dto));
     }
 
     @DeleteMapping("/remove")
     @Operation(summary = "Remove product from wishlist")
-    public ResponseEntity<Wishlist> remove(@Parameter(description = "User ID") @RequestParam Long userId,
-            @Parameter(description = "Product ID") @RequestParam String productId) {
-        return ResponseEntity.ok(service.removeFromWishlist(userId, productId));
+    public ResponseEntity<WishlistResponseDTO> remove(
+            @RequestBody WishlistRequestDTO dto) {
+
+        return ResponseEntity.ok(service.removeFromWishlist(dto));
     }
 
     @GetMapping
-    @Operation(summary = "Get all wishlist products")
-    public ResponseEntity<List<Products>> getWishlist(@Parameter(description = "User ID") @RequestParam Long userId) {
+    @Operation(summary = "Get wishlist")
+    public ResponseEntity<WishlistResponseDTO> getWishlist(
+            @RequestParam Long userId) {
+
         return ResponseEntity.ok(service.getWishlist(userId));
     }
 
     @PostMapping("/move-to-cart")
     @Operation(summary = "Move product from wishlist to cart")
-    public ResponseEntity<String> moveToCart(@Parameter(description = "User ID") @RequestParam Long userId,
-            @Parameter(description = "Product ID") @RequestParam String productId) {
-        service.moveToCart(userId, productId);
+    public ResponseEntity<String> moveToCart(
+            @RequestBody WishlistRequestDTO dto) {
+
+        service.moveToCart(dto);
         return ResponseEntity.ok("Product moved to cart successfully");
     }
 }

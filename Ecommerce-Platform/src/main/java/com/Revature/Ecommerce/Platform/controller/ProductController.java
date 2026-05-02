@@ -2,6 +2,7 @@ package com.Revature.Ecommerce.Platform.controller;
 
 import com.Revature.Ecommerce.Platform.dto.ProductRequestDTO;
 import com.Revature.Ecommerce.Platform.dto.ProductResponseDTO;
+import com.Revature.Ecommerce.Platform.dto.ProductSearchResponseDTO;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.service.ProductService;
@@ -81,7 +82,7 @@ public class ProductController {
 
     @GetMapping("/search")
     @Operation(summary = "Search Products")
-    public ResponseEntity<Page<Products>> searchProducts(
+    public ResponseEntity<ProductSearchResponseDTO> searchProducts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String brand,
@@ -92,8 +93,6 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "price") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
-
-        log.info("API: Search Products");
 
         return ResponseEntity.ok(
                 service.searchProducts(

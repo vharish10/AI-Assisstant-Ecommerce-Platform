@@ -36,7 +36,10 @@ public class OrderService {
 
     public OrderResponseDTO mapToDTO(Order order) {
 
-        List<OrderItemDTO> itemDTOs = order.getItems().stream()
+        List<OrderItem> items = Optional.ofNullable(order.getItems())
+                .orElse(Collections.emptyList());
+
+        List<OrderItemDTO> itemDTOs = items.stream()
                 .map(item -> OrderItemDTO.builder()
                         .productId(item.getProductId())
                         .productName(item.getProductName())
@@ -53,7 +56,7 @@ public class OrderService {
                 .subtotal(order.getSubtotal())
                 .discount(order.getDiscount())
                 .totalAmount(order.getTotalAmount())
-                .status(order.getStatus().name())
+                .status(order.getStatus() != null ? order.getStatus().name() : "UNKNOWN")
                 .orderDate(order.getOrderDate())
                 .addressId(order.getAddressId())
                 .items(itemDTOs)

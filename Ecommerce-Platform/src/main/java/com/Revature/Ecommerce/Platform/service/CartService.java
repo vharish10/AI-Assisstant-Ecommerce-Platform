@@ -71,17 +71,17 @@ public class CartService {
             throw new InvalidRequestException("Quantity must be greater than 0");
         }
 
-        // ✅ Fetch product FIRST
+        //Fetch product FIRST
         Products product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
-        // ✅ Out of stock check
-        if (product.getStock() <= 0) {
+        //Out of stock check
+        if(product.getStock() <= 0){
             throw new InvalidRequestException("Product is out of stock");
         }
 
-        // ✅ Stock validation
-        if (quantity > product.getStock()) {
+        //Stock validation
+        if(quantity > product.getStock()){
             throw new InvalidRequestException("Not enough stock");
         }
         Cart cart = getOrCreateCart(userId);
@@ -89,14 +89,14 @@ public class CartService {
                 .filter(item -> item.getProductId().equals(productId))
                 .findFirst();
 
-        if (existingItem.isPresent()) {
+        if(existingItem.isPresent()){
             CartItem item = existingItem.get();
             int newQuantity = item.getQuantity() + quantity;
             if(newQuantity > product.getStock()){
                 throw new InvalidRequestException("Exceeds available stock");
             }
             item.setQuantity(newQuantity);
-        } else {
+        }else{
             CartItem newItem = CartItem.builder()
                     .productId(productId)
                     .name(product.getName())
@@ -134,7 +134,7 @@ public class CartService {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new CartNotFoundException("Cart not found"));
 
-        // 🔥 Better: use stream instead of loop
+        //use stream instead of loop
         CartItem foundItem = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(productId))
                 .findFirst()
@@ -143,24 +143,21 @@ public class CartService {
         Products product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
-        // 🔴 Important: block if stock is 0
+
         if (product.getStock() <= 0) {
             throw new InvalidRequestException("Product is out of stock");
         }
 
-        // 🟡 Auto-adjust quantity
+        //Auto-adjust quantity
         if (quantity > product.getStock()) {
             log.warn("Adjusting quantity due to stock limit for product {}", productId);
             quantity = product.getStock();
         }
-
         foundItem.setQuantity(quantity);
-
         recalculateTotal(cart);
-
         Cart savedCart = cartRepository.save(cart);
 
-        return mapToDTO(savedCart);   // ✅ FIXED
+        return mapToDTO(savedCart);
     }
 
     private Cart removeItemInternal(Long userId, String productId){
@@ -186,9 +183,7 @@ public class CartService {
     }
 
     public void clearCart(Long userId) {
-
         log.info("Clearing cart for user {}", userId);
-
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new CartNotFoundException("Cart not found"));
 

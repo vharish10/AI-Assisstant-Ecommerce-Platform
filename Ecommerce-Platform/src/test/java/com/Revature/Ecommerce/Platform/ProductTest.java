@@ -1,6 +1,7 @@
 package com.Revature.Ecommerce.Platform;
 
 import com.Revature.Ecommerce.Platform.CustomExceptions.*;
+import com.Revature.Ecommerce.Platform.dto.ProductSearchResponseDTO;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.repository.ProductRepository;
 import com.Revature.Ecommerce.Platform.service.ProductService;
@@ -10,9 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoOperations;
+
 import java.util.*;
+
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,7 +48,7 @@ class ProductTest {
     @Test           //Checking if product can be created
     void testCreateProduct() {
         when(repository.save(product)).thenReturn(product);
-        Products saved=service.createProduct(product);
+        Products saved = service.createProduct(product);
         assertNotNull(saved);
         assertEquals("iPhone 15", saved.getName());
         verify(repository, times(1)).save(product);
@@ -62,7 +64,7 @@ class ProductTest {
     @Test
     void testGetProductByIdNotFound(){
         when(repository.findById("1")).thenReturn(Optional.empty());
-        assertThrows(ProductNotFoundException.class,() -> service.getProductById("1"));
+        assertThrows(ProductNotFoundException.class, () -> service.getProductById("1"));
     }
 
     @Test
@@ -75,7 +77,7 @@ class ProductTest {
     @Test
     void testDeleteProductUnauthorized() {
         when(repository.findById("1")).thenReturn(Optional.of(product));
-        assertThrows(UnauthorizedException.class,()->service.deleteProduct("1", 999L));
+        assertThrows(UnauthorizedException.class, () -> service.deleteProduct("1", 999L));
     }
 
     @Test
@@ -86,7 +88,7 @@ class ProductTest {
         when(mongoTemplate.count(any(), eq(Products.class))).thenReturn(1L);
         when(mongoTemplate.find(any(), eq(Products.class))).thenReturn(productList);
 
-        Page<Products> result = service.searchProducts(
+        ProductSearchResponseDTO result = service.searchProducts(
                 null, "Mobile", null,
                 null, null,
                 null,
@@ -95,7 +97,7 @@ class ProductTest {
         );
 
         assertEquals(1, result.getTotalElements());
-        assertEquals("iPhone 15", result.getContent().get(0).getName());
+        assertEquals("iPhone 15", result.getProducts().get(0).getName());
     }
 
     @Test
@@ -118,7 +120,7 @@ class ProductTest {
         when(mongoTemplate.count(any(), eq(Products.class))).thenReturn(0L);
         when(mongoTemplate.find(any(), eq(Products.class))).thenReturn(Collections.emptyList());
 
-        Page<Products> result = service.searchProducts(
+        ProductSearchResponseDTO result = service.searchProducts(
                 null, null, null,
                 null, null,
                 null,
@@ -127,5 +129,6 @@ class ProductTest {
         );
 
         assertEquals(0, result.getTotalElements());
+        assertTrue(result.getProducts().isEmpty());
     }
 }

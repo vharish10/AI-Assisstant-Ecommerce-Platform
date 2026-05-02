@@ -1,6 +1,7 @@
 package com.Revature.Ecommerce.Platform;
 
 import com.Revature.Ecommerce.Platform.CustomExceptions.*;
+import com.Revature.Ecommerce.Platform.dto.CartResponseDTO;
 import com.Revature.Ecommerce.Platform.models.Cart;
 import com.Revature.Ecommerce.Platform.models.Products;
 import com.Revature.Ecommerce.Platform.repository.CartRepository;
@@ -43,6 +44,8 @@ public class CartServiceTest {
     @Test               //Creation of cart if not exist
     void testCreateCart(){
         when(cartRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(cartRepository.save(any(Cart.class))).thenAnswer(i -> i.getArgument(0));
+
         cart=service.getOrCreateCart(1L);
         System.out.println("Cart:"+cart);
         assertNotNull(cart);
@@ -55,9 +58,10 @@ public class CartServiceTest {
         when(cartRepository.findByUserId(1L)).thenReturn(Optional.empty());
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
         when(cartRepository.save(any(Cart.class))).thenAnswer(i -> i.getArguments()[0]);
-        cart=service.addToCart(1L, "p1", 2);
 
-         System.out.println("Cart:"+cart);
+        CartResponseDTO cart = service.addToCart(1L, "p1", 2);
+
+        System.out.println("Cart:"+cart);
 
         assertEquals(1,cart.getItems().size());
         assertEquals(2,cart.getItems().get(0).getQuantity());
@@ -69,11 +73,11 @@ public class CartServiceTest {
         Cart storedCart = new Cart();
         //stubbing the findByUserId cart so that if cart already exist  then use that , else create an empty cart
         when(cartRepository.findByUserId(1L)).thenAnswer(invocation->{
-                    if (storedCart.getItems() == null || storedCart.getItems().isEmpty()) {
-                        return Optional.empty();
-                    }
-                    return Optional.of(storedCart);
-                });
+            if (storedCart.getItems() == null || storedCart.getItems().isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(storedCart);
+        });
         //stubbing the save method in cartRepository
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
             Cart saved = invocation.getArgument(0);
@@ -100,8 +104,8 @@ public class CartServiceTest {
         when(productRepository.findById("p1")).thenReturn(Optional.of(p1));
         when(productRepository.findById("p2")).thenReturn(Optional.of(p2));
 
-        Cart cart = service.addToCart(1L, "p1", 2);
-        cart = service.addToCart(1L, "p2", 1);
+        service.addToCart(1L, "p1", 2);
+        CartResponseDTO cart = service.addToCart(1L, "p2", 1);
 
         System.out.println("Cart: " + cart);
 
@@ -128,10 +132,10 @@ public class CartServiceTest {
         });
 
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
-        Cart cart = service.addToCart(1L, "p1", 2);
-        Cart result = service.viewCart(1L);
+        service.addToCart(1L, "p1", 2);
+        CartResponseDTO result = service.viewCart(1L);
         assertNotNull(result);
-        assertEquals(cart.getUserId(), result.getUserId());
+        assertEquals(1L, result.getUserId());
         assertEquals(1, result.getItems().size());
     }
 
@@ -157,10 +161,10 @@ public class CartServiceTest {
 
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
 
-        Cart cart = service.addToCart(1L, "p1", 2);
-        System.out.println("Cart:"+cart);
+        service.addToCart(1L, "p1", 2);
+        System.out.println("Cart:"+storedCart);
         service.clearCart(1L);
-        Cart result = service.viewCart(1L);
+        CartResponseDTO result = service.viewCart(1L);
         System.out.println("Cart: " + result);
         assertNotNull(result);
         assertTrue(result.getItems().isEmpty());
@@ -184,11 +188,11 @@ public class CartServiceTest {
             return storedCart;
         });
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
-        Cart cart = service.addToCart(1L, "p1", 2);
-        System.out.println("Cart:"+cart);
-        service.removeItem(1L,"p1");
-        System.out.println("Cart:"+cart);
-        assertEquals(cart.getUserId(),1L);
+        service.addToCart(1L, "p1", 2);
+        System.out.println("Cart:"+storedCart);
+        CartResponseDTO result = service.removeItem(1L,"p1");
+        System.out.println("Cart:"+result);
+        assertEquals(1L,result.getUserId());
     }
 
     @Test
@@ -196,7 +200,7 @@ public class CartServiceTest {
         when(cartRepository.findByUserId(1L)).thenReturn(Optional.empty());
         assertThrows(CartNotFoundException.class,
                 ()->{service.removeItem(1L, "p1");
-        });
+                });
     }
 
     @Test           //test for product quantity updates
@@ -220,10 +224,10 @@ public class CartServiceTest {
                 });
 
         when(productRepository.findById("p1")).thenReturn(Optional.of(product));
-        Cart temp = service.addToCart(1L,"p1",3);
-        System.out.println("Cart:"+temp);
-        int oldQuantity = temp.getItems().get(0).getQuantity();
-        Cart result = service.updateQuantity(1L,"p1",1);
+        service.addToCart(1L,"p1",3);
+        System.out.println("Cart:"+storedCart);
+        int oldQuantity = storedCart.getItems().get(0).getQuantity();
+        CartResponseDTO result = service.updateQuantity(1L,"p1",1);
         System.out.println("Cart:"+result);
         int newQuantity = result.getItems().get(0).getQuantity();
         assertNotEquals(oldQuantity,newQuantity);
@@ -232,6 +236,9 @@ public class CartServiceTest {
 
     @Test           //Test for throwing RuntimeException when the product quantity in cart is less than quantity to be deleted
     void testThrowProductStockNotEnough(){
-
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        assertThrows(CartNotFoundException.class, () -> {
+            service.updateQuantity(1L, "p1", 5);
+        });
     }
 }
