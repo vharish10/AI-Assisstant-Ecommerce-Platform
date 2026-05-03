@@ -1,12 +1,12 @@
 package com.Revature.Ecommerce.Platform.repository;
 
-import com.Revature.Ecommerce.Platform.models.Cart;
+import com.Revature.Ecommerce.Platform.models.Wishlist;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-@Repository
-public interface CartRepository extends MongoRepository<Cart, String> {
 
-    Optional<Cart> findByUserId(Long userId);
+@Repository
+public interface WishlistRepository extends MongoRepository<Wishlist, String> {
+    Optional<Wishlist> findByUserId(Long userId);
 }
