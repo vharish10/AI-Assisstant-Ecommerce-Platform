@@ -4,6 +4,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 import java.util.List;
 import java.util.Map;
@@ -17,25 +19,21 @@ public class Products {
 
     @Id
     private String id;
-
     private String name;
     private String description;
-
     @Indexed
     private String category;
-
     @Indexed
     private String brand;
-
     @Indexed
     private Double price;
-
     private Integer stock;
-
-    private Integer sellerId;
-
+    private Long sellerId;
+    private String city;
     private List<String> images;
     private List<String> tags;
 
+    @JsonIgnore
+    private List<Double> embedding;
     private Map<String, Object> attributes;
 }
