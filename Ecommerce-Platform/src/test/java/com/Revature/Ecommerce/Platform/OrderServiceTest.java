@@ -74,7 +74,7 @@ class OrderServiceTest {
         when(orderRepository.save(any())).thenAnswer(invocation -> {
             Order o = invocation.getArgument(0);
             o.setOrderId(1L);
-            o.setItems(new ArrayList<>());   // ✅ prevent NPE
+            o.setItems(new ArrayList<>());
             return o;
         });
 

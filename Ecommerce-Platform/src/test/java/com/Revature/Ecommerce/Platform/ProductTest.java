@@ -102,11 +102,10 @@ class ProductTest {
 
     @Test
     void testSearchInvalidPriceRange() {
-
         assertThrows(InvalidFilterException.class, () ->
                 service.searchProducts(
                         null, null, null,
-                        5000.0, 1000.0,   // invalid
+                        5000.0, 1000.0,
                         null,
                         0, 10,
                         "price", "asc"

@@ -4,6 +4,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 import java.util.List;
 import java.util.Map;
@@ -31,5 +33,7 @@ public class Products {
     private List<String> images;
     private List<String> tags;
 
+    @JsonIgnore
+    private List<Double> embedding;
     private Map<String, Object> attributes;
 }
