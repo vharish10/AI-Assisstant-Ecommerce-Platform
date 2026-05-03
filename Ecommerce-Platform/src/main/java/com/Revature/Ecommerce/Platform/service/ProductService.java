@@ -28,6 +28,9 @@ public class ProductService {
     @Autowired
     private MongoOperations mongoTemplate;
 
+    @Autowired
+    private EmbeddingService embeddingService;
+
     public ProductResponseDTO mapToDTO(Products product) {
         return ProductResponseDTO.builder()
                 .id(product.getId())
@@ -63,6 +66,8 @@ public class ProductService {
 
     public Products createProduct(Products product) {
         log.info("Creating product: {}", product.getName());
+        String text = product.getName() + " " + product.getDescription();
+        product.setEmbedding(embeddingService.getEmbedding(text));
         return repository.save(product);
     }
 
@@ -120,6 +125,9 @@ public class ProductService {
         if (dto.getCity() != null) {
             product.setCity(dto.getCity());
         }
+
+        String text = product.getName() + " " + product.getDescription();
+        product.setEmbedding(embeddingService.getEmbedding(text));
         log.info("Product updated successfully: {}", id);
         return repository.save(product);
     }
