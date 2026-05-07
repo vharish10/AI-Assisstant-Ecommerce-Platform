@@ -180,11 +180,17 @@ public class ProductService {
         }
 
         if (category != null && !category.isEmpty()) {
-            criteriaList.add(Criteria.where("category").is(category));
+            criteriaList.add(
+                    Criteria.where("category")
+                            .regex(category, "i")
+            );
         }
 
         if (brand != null && !brand.isEmpty()) {
-            criteriaList.add(Criteria.where("brand").is(brand));
+            criteriaList.add(
+                    Criteria.where("brand")
+                            .regex(brand, "i")
+            );
         }
 
         if (minPrice != null && maxPrice != null) {
