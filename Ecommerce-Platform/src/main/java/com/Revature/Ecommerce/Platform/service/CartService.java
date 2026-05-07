@@ -70,16 +70,13 @@ public class CartService {
         if (quantity <= 0) {
             throw new InvalidRequestException("Quantity must be greater than 0");
         }
-
         //Fetch product FIRST
         Products product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
-
         //Out of stock check
         if(product.getStock() <= 0){
             throw new InvalidRequestException("Product is out of stock");
         }
-
         //Stock validation
         if(quantity > product.getStock()){
             throw new InvalidRequestException("Not enough stock");
@@ -88,7 +85,6 @@ public class CartService {
         Optional<CartItem> existingItem = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(productId))
                 .findFirst();
-
         if(existingItem.isPresent()){
             CartItem item = existingItem.get();
             int newQuantity = item.getQuantity() + quantity;
@@ -126,15 +122,12 @@ public class CartService {
     public CartResponseDTO updateQuantity(Long userId, String productId, int quantity) {
 
         log.info("Updating quantity for product {} in user {} cart", productId, userId);
-
         if (quantity <= 0) {
             throw new InvalidRequestException("Quantity must be greater than 0");
         }
-
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new CartNotFoundException("Cart not found"));
 
-        //use stream instead of loop
         CartItem foundItem = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(productId))
                 .findFirst()
@@ -143,12 +136,10 @@ public class CartService {
         Products product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
-
         if (product.getStock() <= 0) {
             throw new InvalidRequestException("Product is out of stock");
         }
 
-        //Auto-adjust quantity
         if (quantity > product.getStock()) {
             log.warn("Adjusting quantity due to stock limit for product {}", productId);
             quantity = product.getStock();
@@ -162,19 +153,14 @@ public class CartService {
 
     private Cart removeItemInternal(Long userId, String productId){
         log.info("Removing product {} from user {} cart", productId, userId);
-
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new CartNotFoundException("Cart not found"));
-
         boolean removed = cart.getItems()
                 .removeIf(item -> item.getProductId().equals(productId));
-
         if(!removed){
             throw new CartItemNotFoundException("Item not found in cart");
         }
-
         recalculateTotal(cart);
-
         return cartRepository.save(cart);
     }
 

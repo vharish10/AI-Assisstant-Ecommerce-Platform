@@ -1,6 +1,5 @@
 package com.Revature.Ecommerce.Platform.models;
 
-import lombok.AllArgsConstructor;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

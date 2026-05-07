@@ -56,7 +56,7 @@ public class OrderService {
                 .subtotal(order.getSubtotal())
                 .discount(order.getDiscount())
                 .totalAmount(order.getTotalAmount())
-                .status(order.getStatus() != null ? order.getStatus().name() : "UNKNOWN")
+//                .status(order.getStatus() != null ? order.getStatus().name() : "UNKNOWN")
                 .orderDate(order.getOrderDate())
                 .addressId(order.getAddressId())
                 .items(itemDTOs)
@@ -81,7 +81,7 @@ public class OrderService {
                 .subtotal(subtotal)
                 .discount(discount)
                 .totalAmount(totalAmount)
-                .status(OrderStatus.PLACED)
+//                .status(OrderStatus.PLACED)
                 .orderDate(LocalDateTime.now())
                 .addressId(addressId)
                 .build();
@@ -119,34 +119,27 @@ public class OrderService {
     //buuying the product directly without adding it to the cart
     @Transactional
     public OrderResponseDTO buyNow(Long userId, String productId, int quantity, Long addressId){
-
         log.info("Buy Now triggered for user {} product {}", userId, productId);
-
         if(quantity <= 0){
             throw new InvalidRequestException("Quantity must be greater than 0");
         }
-
         Products product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
-
         if(product.getStock() <= 0){
             throw new InvalidRequestException("Product is out of stock");
         }
-
         if(quantity > product.getStock()){
             throw new InvalidRequestException("Not enough stock");
         }
-
         double subtotal = product.getPrice() * quantity;
         double discount = 0.0;
         double totalAmount = subtotal - discount;
-
         Order order = Order.builder()
                 .userId(userId)
                 .subtotal(subtotal)
                 .discount(discount)
                 .totalAmount(totalAmount)
-                .status(OrderStatus.PLACED)
+//                .status(OrderStatus.PLACED)
                 .orderDate(LocalDateTime.now())
                 .addressId(addressId)
                 .build();
@@ -198,9 +191,9 @@ public class OrderService {
     public OrderResponseDTO cancelOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
-        if (order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED) {
-            throw new OrderCancelAfterShippingEXception("Cannot cancel after shipping");
-        }
+//        if (order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED) {
+//            throw new OrderCancelAfterShippingEXception("Cannot cancel after shipping");
+//        }
         List<OrderItem> items = orderItemRepository.findByOrderOrderId(orderId);
         for(OrderItem item : items){
             if(!item.isCancelled()){
@@ -212,7 +205,7 @@ public class OrderService {
                 orderItemRepository.save(item);
             }
         }
-        order.setStatus(OrderStatus.CANCELLED);
+//        order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
         return mapToDTO(savedOrder);
     }
@@ -224,10 +217,10 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
-        if (order.getStatus() == OrderStatus.SHIPPED ||
-                order.getStatus() == OrderStatus.DELIVERED) {
-            throw new OrderCancelAfterShippingEXception("Cannot cancel after shipping");
-        }
+//        if (order.getStatus() == OrderStatus.SHIPPED ||
+//                order.getStatus() == OrderStatus.DELIVERED) {
+//            throw new OrderCancelAfterShippingEXception("Cannot cancel after shipping");
+//        }
 
         List<OrderItem> items = orderItemRepository.findByOrderOrderId(orderId);
 
@@ -265,14 +258,14 @@ public class OrderService {
 
         // Update total amount
         double newFinalAmount = order.getTotalAmount() - refundAmount;
-        order.setTotalAmount(newFinalAmount);   // ✅ fixed duplicate line
+        order.setTotalAmount(newFinalAmount);   //  duplicate line
 
         // Check if all items cancelled
         boolean allCancelled = items.stream().allMatch(OrderItem::isCancelled);
 
-        if (allCancelled) {
-            order.setStatus(OrderStatus.CANCELLED);
-        }
+//        if (allCancelled) {
+//            order.setStatus(OrderStatus.CANCELLED);
+//        }
 
         Order savedOrder = orderRepository.save(order);
 

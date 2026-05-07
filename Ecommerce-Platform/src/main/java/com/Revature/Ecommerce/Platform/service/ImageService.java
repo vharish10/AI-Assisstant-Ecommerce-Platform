@@ -27,14 +27,10 @@ public class ImageService {
 
         try {
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-
             Path path = Paths.get(uploadDir + fileName);
-
             Files.createDirectories(path.getParent());
-
             Files.write(path, file.getBytes());
-
-            return "/images/" + fileName; // URL path
+            return "/images/" + fileName;
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to upload image");
@@ -45,14 +41,11 @@ public class ImageService {
                                             ProductRequestDTO dto,
                                             Long sellerId,
                                             List<String> images) {
-
         Products product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
-
         if (!product.getSellerId().equals(sellerId)) {
             throw new UnauthorizedException("Not your product");
         }
-
         // update fields
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
@@ -60,7 +53,7 @@ public class ImageService {
         product.setStock(dto.getStock());
 
         if (images != null && !images.isEmpty()) {
-            product.setImages(images);   // replace images
+            product.setImages(images);
         }
 
         return productRepository.save(product);

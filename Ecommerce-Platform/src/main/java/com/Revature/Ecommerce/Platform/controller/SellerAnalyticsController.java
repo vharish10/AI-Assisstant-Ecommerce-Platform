@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/seller/analytics")
-@Tag(name = "Seller Analytics Controller", description = "APIs for seller dashboard insights")
+@Tag(name = "Seller Analytics Controller")
 public class SellerAnalyticsController {
 
     @Autowired
